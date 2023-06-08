@@ -1,0 +1,3 @@
+cd C:\Users\ddrye\OneDrive\Documents\OMSA_Program\OMSA 2023\Summer2023\Practicum_testing\data
+
+wget --load-cookies C:\Users\ddrye\.urs_cookies --save-cookies C:\Users\ddrye\.urs_cookies --keep-session-cookies --user=ddryer --ask-password -P data_netcdf/ --content-disposition -i data_links.txt
