@@ -1,7 +1,7 @@
 #### To run the app: ####
 
 # pip install streamlit
-# to run file locally, cd into folder where file and data are located and execute 'streamlit run test_app_dbscan.py' in command line
+# to run file locally, cd into folder where file and data are located and execute 'streamlit run app_dbscan.py' in command line
 # make sure data file is in the same folder as this file
 
 #########################
@@ -22,6 +22,9 @@ background = st.container()
 kmeans_heat_map = st.container()
 kmeans_map = st.container()
 kmeans_scatter_plot = st.container()
+fdr_heat_map = st.container()
+fdr_map = st.container()
+fdr_scatter_plot = st.container()
 
 
 # Cache data load
@@ -33,12 +36,12 @@ def load_data(filename):
 
 @st.cache_data
 def kmeans_heatmap(df):
+
     variables = [
         'avg_co2', 'total_population', 'housing_units', 'num_households', 'unemployment',
         'socioeconomic', 'household_comp', 'minority_status', 'housing_type',
         'overall_svi', 'xco2_std', 'co2_6yr_pct_change'
     ]
-
     values = df[variables].values
 
     # Define the minimum and maximum values for the colorscale
@@ -180,11 +183,11 @@ def kmeans_scatter(df):
         ]
     )
 
-    # Set plot layout with dark color scheme and legend
+    # Set plot layout with color scheme and legend
     fig.update_layout(
         xaxis=dict(title='avg_co2'),
         yaxis=dict(title=y_column),
-        autosize=True, # Set the dark color scheme
+        autosize=True,
         showlegend=True,  # Show the legend
         legend=dict(
             title='Cluster',  # Set the legend title
@@ -285,9 +288,7 @@ def kmeans_map_by_value(df):
             )
         ]
     )
-
-    # Set plot layout with dark color scheme
-    fig.update_layout(  # Set the dark color scheme
+    fig.update_layout(
         geo=dict(
             scope='usa',
             showland=True,
@@ -341,6 +342,50 @@ def kmeans_map_by_value(df):
 
     return fig
 
+def kmeans_fdr_heatmap(df):
+
+    variables = ['Mean_avg_co2', 'Mean_total_population', 'Mean_housing_units',
+                  'Mean_num_households', 'Mean_unemployment', 'Mean_socioeconomic',
+                  'Mean_household_comp', 'Mean_minority_status', 'Mean_housing_type',
+                  'Mean_overall_svi', 'Mean_xco2_std', 'Slope_avg_co2',
+                  'Slope_total_population', 'Slope_housing_units', 'Slope_num_households',
+                  'Slope_unemployment', 'Slope_socioeconomic', 'Slope_household_comp',
+                  'Slope_minority_status', 'Slope_housing_type', 'Slope_overall_svi',
+                  'Slope_xco2_std']
+    values = df[variables].values
+
+    # Define the minimum and maximum values for the colorscale
+    zmin = np.nanmin(values)
+    zmax = np.nanmax(values)
+
+    # Create the heatmap figure
+    fig = go.Figure(data=go.Heatmap(
+        z=values,
+        x=variables,
+        y=df['Cluster'],
+        colorscale='Viridis',
+        zmin=zmin,
+        zmax=zmax,
+        text=np.around(values, decimals=4),
+        hovertemplate='Variable: %{x}<br>Cluster: %{y}<br>Value: %{text}'
+    ))
+
+    # Set the text font size and color for the heatmap squares
+    fig.update_traces(textfont=dict(size=12, color='black'))
+
+    # Set the heatmap layout
+    fig.update_layout(
+        title='Heatmap Centroid Analysis',
+        xaxis=dict(
+            title='Variables',
+            tickangle=270,
+            tickfont=dict(size=10),
+            automargin=True
+        ),
+        yaxis=dict(title='Cluster')
+    )
+
+    return fig
 
 
 with header:
@@ -363,3 +408,9 @@ with kmeans_map:
     st.header('Map by Cluster')
     st.subheader('K-Means Clustering k=6')
     st.plotly_chart(kmeans_map_by_value(data), use_container_width=True)
+
+with fdr_heat_map:
+    data_fdr = load_data('kmeans_fdr_centroids.csv')
+    st.header('Heatmap of Cluster Centroids (functionally reduced variables)')
+    st.subheader('K-Means Clustering k=6')
+    st.plotly_chart(kmeans_fdr_heatmap(data_fdr), use_container_width=True)
