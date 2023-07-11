@@ -35,13 +35,10 @@ def load_data(filename):
     return data
 
 @st.cache_data
-def kmeans_heatmap(df):
+def kmeans_heatmap(df, value_vars):
 
-    variables = [
-        'avg_co2', 'total_population', 'housing_units', 'num_households', 'unemployment',
-        'socioeconomic', 'household_comp', 'minority_status', 'housing_type',
-        'overall_svi', 'xco2_std', 'co2_6yr_pct_change'
-    ]
+    variables = value_vars
+
     values = df[variables].values
 
     # Define the minimum and maximum values for the colorscale
@@ -65,7 +62,6 @@ def kmeans_heatmap(df):
 
     # Set the heatmap layout
     fig.update_layout(
-        title='Heatmap Centroid Analysis',
         xaxis=dict(
             title='Variables',
             tickangle=270,
@@ -78,9 +74,10 @@ def kmeans_heatmap(df):
     return fig
 
 @st.cache_data
-def kmeans_scatter(df):
+def kmeans_scatter(df,dropdown_values):
     """
     :param df: dataframe resulting from k-means analysis on all vars, all years, and 6yr pct change var, and cluster labels column
+    :param dropdown_values: list of column names to be used in the dropdown menu
     :return: plotly figure object that:
                 plots all vars vs avg_co2
                 has dropdown menu for y column
@@ -88,9 +85,7 @@ def kmeans_scatter(df):
                 shades points by cluster
     """
     # Specify the columns for the dropdown menu
-    dropdown_columns = ['xco2_std', 'total_population', 'housing_units', 'num_households',
-                        'unemployment', 'socioeconomic', 'household_comp',
-                        'minority_status', 'housing_type', 'overall_svi', 'co2_6yr_pct_change']
+    dropdown_columns = dropdown_values
 
     # Define colors for each cluster
     cluster_colors = ['blue', 'green', 'yellow', 'red', 'purple', 'orange']
@@ -203,12 +198,12 @@ def kmeans_scatter(df):
 
 
 
-def kmeans_map_by_value(df):
+#kmeans k=6 points colored by value
+def kmeans_map_by_value(df, dropdown_values):
     # Specify the columns for the dropdown menu
-    dropdown_columns = ['avg_co2', 'xco2_std', 'total_population', 'housing_units', 'num_households',
-                        'unemployment', 'socioeconomic', 'household_comp',
-                        'minority_status', 'housing_type', 'overall_svi', 'co2_6yr_pct_change']
+    dropdown_columns = dropdown_values
 
+    # Create the scatter point US map
     # Create the scatter point US map
     fig = make_subplots(rows=1, cols=1)
 
@@ -288,6 +283,8 @@ def kmeans_map_by_value(df):
             )
         ]
     )
+
+    # Set plot layout with dark color scheme
     fig.update_layout(
         geo=dict(
             scope='usa',
@@ -342,50 +339,6 @@ def kmeans_map_by_value(df):
 
     return fig
 
-def kmeans_fdr_heatmap(df):
-
-    variables = ['Mean_avg_co2', 'Mean_total_population', 'Mean_housing_units',
-                  'Mean_num_households', 'Mean_unemployment', 'Mean_socioeconomic',
-                  'Mean_household_comp', 'Mean_minority_status', 'Mean_housing_type',
-                  'Mean_overall_svi', 'Mean_xco2_std', 'Slope_avg_co2',
-                  'Slope_total_population', 'Slope_housing_units', 'Slope_num_households',
-                  'Slope_unemployment', 'Slope_socioeconomic', 'Slope_household_comp',
-                  'Slope_minority_status', 'Slope_housing_type', 'Slope_overall_svi',
-                  'Slope_xco2_std']
-    values = df[variables].values
-
-    # Define the minimum and maximum values for the colorscale
-    zmin = np.nanmin(values)
-    zmax = np.nanmax(values)
-
-    # Create the heatmap figure
-    fig = go.Figure(data=go.Heatmap(
-        z=values,
-        x=variables,
-        y=df['Cluster'],
-        colorscale='Viridis',
-        zmin=zmin,
-        zmax=zmax,
-        text=np.around(values, decimals=4),
-        hovertemplate='Variable: %{x}<br>Cluster: %{y}<br>Value: %{text}'
-    ))
-
-    # Set the text font size and color for the heatmap squares
-    fig.update_traces(textfont=dict(size=12, color='black'))
-
-    # Set the heatmap layout
-    fig.update_layout(
-        title='Heatmap Centroid Analysis',
-        xaxis=dict(
-            title='Variables',
-            tickangle=270,
-            tickfont=dict(size=10),
-            automargin=True
-        ),
-        yaxis=dict(title='Cluster')
-    )
-
-    return fig
 
 
 with header:
@@ -393,24 +346,41 @@ with header:
 
 with kmeans_heat_map:
     data = load_data('kmeans_tot_pct_centroids.csv')
+    kmeans_heatmap_vars = ['avg_co2', 'total_population', 'housing_units', 'num_households', 'unemployment',
+    'socioeconomic', 'household_comp', 'minority_status', 'housing_type',
+    'overall_svi', 'xco2_std', 'co2_6yr_pct_change']
     st.header('Heatmap of Cluster Centroids')
     st.subheader('K-Means Clustering k=6')
-    st.plotly_chart(kmeans_heatmap(data), use_container_width=True)
+    st.plotly_chart(kmeans_heatmap(data, kmeans_heatmap_vars), use_container_width=True)
 
 with kmeans_scatter_plot:
     data = load_data('kmeans_sample.csv')
+    kmeans_scatter_vars = ['xco2_std', 'total_population', 'housing_units', 'num_households',
+                           'unemployment', 'socioeconomic', 'household_comp',
+                           'minority_status', 'housing_type', 'overall_svi', 'co2_6yr_pct_change']
     st.header('All Variables vs CO2 by cluster')
     st.subheader('K-Means Clustering k=6')
-    st.plotly_chart(kmeans_scatter(data), use_container_width=True)
+    st.plotly_chart(kmeans_scatter(data,kmeans_scatter_vars ), use_container_width=True)
 
 with kmeans_map:
     data = load_data('kmeans_sample.csv')
+    kmeans_map_by_values_vars = ['avg_co2', 'xco2_std', 'total_population', 'housing_units', 'num_households',
+                                 'unemployment', 'socioeconomic', 'household_comp',
+                                 'minority_status', 'housing_type', 'overall_svi', 'co2_6yr_pct_change']
     st.header('Map by Cluster')
     st.subheader('K-Means Clustering k=6')
-    st.plotly_chart(kmeans_map_by_value(data), use_container_width=True)
+    st.plotly_chart(kmeans_map_by_value(data, kmeans_map_by_values_vars), use_container_width=True)
 
 with fdr_heat_map:
     data_fdr = load_data('kmeans_fdr_centroids.csv')
+    fdr_heatmap_vars = ['Mean_avg_co2', 'Mean_total_population', 'Mean_housing_units',
+                  'Mean_num_households', 'Mean_unemployment', 'Mean_socioeconomic',
+                  'Mean_household_comp', 'Mean_minority_status', 'Mean_housing_type',
+                  'Mean_overall_svi', 'Mean_xco2_std', 'Slope_avg_co2',
+                  'Slope_total_population', 'Slope_housing_units', 'Slope_num_households',
+                  'Slope_unemployment', 'Slope_socioeconomic', 'Slope_household_comp',
+                  'Slope_minority_status', 'Slope_housing_type', 'Slope_overall_svi',
+                  'Slope_xco2_std']
     st.header('Heatmap of Cluster Centroids (functionally reduced variables)')
     st.subheader('K-Means Clustering k=6')
-    st.plotly_chart(kmeans_fdr_heatmap(data_fdr), use_container_width=True)
+    st.plotly_chart(kmeans_heatmap(data_fdr, fdr_heatmap_vars), use_container_width=True)
