@@ -14,7 +14,7 @@ import numpy as np
 # Plots
 import plotly.graph_objs as go
 from plotly.subplots import make_subplots
-import plotly.colors
+import matplotlib.cm as cm
 
 
 # Main sections for app
@@ -89,7 +89,7 @@ def kmeans_scatter(df,dropdown_values):
     dropdown_columns = dropdown_values
 
     # Define colors for each cluster
-    cluster_colors = ['blue', 'green', 'yellow', 'red', 'purple', 'orange']
+    cluster_colors = ['#fde725', '#7ad151', "#22a884", "#2a788e", "#414487", "#440154"]
 
     # Create the scatter plot figure
     fig = make_subplots(rows=1, cols=1)
@@ -337,28 +337,16 @@ def kmeans_map_by_value(df, dropdown_values):
     fig.update_layout(sliders=[slider])
 
     return fig
-
 @st.cache_data
-def kmeans_map_by_cluster(df, dropdown_values):
+def kmeans_map_by_cluster(df):
     """
     :param df: dataframe resulting from k-means analysis on all vars, all years, and 6yr pct change var, and cluster labels column
-    :param dropdown_values: list of column names to be used in the dropdown menu
     :return: plotly figure object that:
                 plots all vars vs avg_co2
-                has dropdown menu for variable
                 shades points by cluster
     """
-    # Specify the columns for the dropdown menu
-    dropdown_columns = dropdown_values
-
-    # Define cluster colors
-    cluster_colors = ['blue', 'green', 'yellow', 'red', 'purple', 'orange']
-
     # Create the scatter point US map
     fig = make_subplots(rows=1, cols=1)
-
-    # Set initial variable for the scatter point US map
-    variable = dropdown_columns[0]
 
     # Add scatter trace to the figure
     scatter = go.Scattergeo(
@@ -370,86 +358,20 @@ def kmeans_map_by_cluster(df, dropdown_values):
             sizemode='diameter',
             sizeref=0.1,
             sizemin=1,
-            color=df['Cluster'],  # Shades points by cluster value
-            colorscale=[(i, cluster_colors[i]) for i in range(len(cluster_colors))],  # Use the specified cluster colors
-            showscale=False,  # Disable the colorscale legend
+            color=df['Cluster'],  # Shade points by the 'Cluster' column
+            colorscale='Viridis',
+            showscale=True,
+            colorbar=dict(title='Cluster')
         ),
         hovertemplate='<b>Location:</b> %{text}<br>' +
-                      '<b>Cluster:</b> %{marker.color}<br>',
+                      '<b>Cluster:</b> %{marker.color}',
         text=df['LOCATION']
     )
 
     fig.add_trace(scatter)
 
-    # Add custom legend for clusters
-    legend_items = [
-        go.Scattergeo(
-            lat=[],
-            lon=[],
-            mode='markers',
-            marker=dict(
-                size=10,
-                color=cluster_colors[i],
-                symbol='circle',
-                line=dict(width=1, color='black')
-            ),
-            hoverinfo='skip',
-            showlegend=True,
-            name=f'Cluster {i}',
-        )
-        for i in range(len(cluster_colors))
-    ]
-
-    fig.add_traces(legend_items)
-
-    # Define the dropdown menu options for the variable
-    dropdown_options = []
-    for col in dropdown_columns:
-        if col == 'avg_co2':
-            dropdown_options.append(
-                {
-                    'label': col,
-                    'method': 'update',
-                    'args': [
-                        {'marker': {'colorscale': [(i, cluster_colors[i]) for i in range(len(cluster_colors))], 'color': df['Cluster']}},
-                        {'marker': {'colorscale': [(i, cluster_colors[i]) for i in range(len(cluster_colors))], 'color': df['Cluster']}}
-                    ]
-                }
-            )
-        else:
-            cmin = df[col].min()
-            cmax = df[col].max()
-
-            dropdown_options.append(
-                {
-                    'label': col,
-                    'method': 'update',
-                    'args': [
-                        {'marker': {'colorscale': 'Viridis', 'color': df[col], 'colorbar': {'title': col, 'cmin': cmin, 'cmax': cmax}}},
-                        {'marker': {'colorscale': 'Viridis', 'color': df[col], 'colorbar': {'title': col, 'cmin': cmin, 'cmax': cmax}}}
-                    ]
-                }
-            )
-
-    # Add dropdown menu for the variable
+    # Set plot layout with dark color scheme
     fig.update_layout(
-        updatemenus=[
-            dict(
-                buttons=dropdown_options,
-                direction='down',
-                active=0,
-                x=0.8,
-                xanchor='left',
-                y=1.1,
-                yanchor='top'
-            )
-        ]
-    )
-
-    # Set plot layout with legend
-    fig.update_layout(
-        title='US Socioeconomic Vulnerability Variables and Atmospheric CO2 Concentration 2014-2020',
-        template='plotly_dark',  # Set the dark color scheme
         geo=dict(
             scope='usa',
             showland=True,
@@ -461,20 +383,42 @@ def kmeans_map_by_cluster(df, dropdown_values):
             showcountries=True,
             countrycolor='gray',
             projection_type='albers usa'
-        ),
-        showlegend=True,
-        legend=dict(
-            title='Clusters',
-            itemsizing='constant',
-            bgcolor='rgba(0,0,0,0)',
-            xanchor='right',
-            yanchor='top',
-            x=0.98,
-            y=0.98,
-            bordercolor='black',
-            borderwidth=1
         )
     )
+
+    # Add slider bar for year filter
+    slider = dict(
+        active=0,
+        currentvalue={"prefix": "Year: "},
+        pad={"t": 50},
+        steps=[]
+    )
+
+    unique_clusters = sorted(df['Cluster'].unique())
+
+    for year in sorted(df['year'].unique()):
+        step = {
+            "label": str(year),
+            "method": "update",
+            "args": [
+                {
+                    "marker": {
+                        "size": 15,
+                        "sizemode": "diameter",
+                        "sizeref": 0.1,
+                        "sizemin": 1,
+                        "color": [df[(df['year'] == year)]['Cluster'].tolist()[0]],
+                        "colorscale": "Viridis",
+                        "colorbar": {"title": 'Cluster'},
+                    }
+                },
+                {"marker.colorbar.title": 'Cluster'},
+            ]
+        }
+        step['args'][0]['marker']['color'] = df[df['year'] == year]['Cluster'].tolist()
+        slider['steps'].append(step)
+
+    fig.update_layout(sliders=[slider])
 
     return fig
 
@@ -492,7 +436,7 @@ def fdr_scatter(df, dropdown_values):
     dropdown_columns = dropdown_values
 
     # Define colors for each cluster
-    cluster_colors = ['blue', 'green', 'yellow', 'red', 'purple', 'orange']
+    cluster_colors = ['#fde725', '#7ad151', "#22a884", "#2a788e", "#414487", "#440154"]
 
     # Create the scatter plot figure
     fig = make_subplots(rows=1, cols=1)
@@ -667,27 +611,15 @@ def fdr_map_by_value(df, dropdown_values):
     return fig
 
 @st.cache_data
-def fdr_map_by_cluster(df, dropdown_values):
+def fdr_map_by_cluster(df):
     """
     :param df: dataframe resulting from k-means analysis on all vars, all years, and 6yr pct change var, and cluster labels column
-    :param dropdown_values: list of column names to be used in the dropdown menu
     :return: plotly figure object that:
                 plots all vars vs avg_co2
-                has dropdown menu for variable
                 shades points by cluster
     """
-    # Specify the columns for the dropdown menu
-    dropdown_columns = dropdown_values
-
-    # Define cluster colors
-    cluster_colors = ['blue', 'green', 'yellow', 'red', 'purple', 'orange']
-    cluster_labels = ['Cluster 0', 'Cluster 1', 'Cluster 2', 'Cluster 3', 'Cluster 4', 'Cluster 5']
-
     # Create the scatter point US map
     fig = make_subplots(rows=1, cols=1)
-
-    # Set initial variable for the scatter point US map
-    variable = dropdown_columns[0]
 
     # Add scatter trace to the figure
     scatter = go.Scattergeo(
@@ -699,84 +631,20 @@ def fdr_map_by_cluster(df, dropdown_values):
             sizemode='diameter',
             sizeref=0.1,
             sizemin=1,
-            color=df['Cluster'],  # Shades points by cluster value
-            colorscale=cluster_colors,  # Use the specified cluster colors
-            showscale=False,  # Disable the colorscale legend
+            color=df['Cluster'],  # Shade points by the 'Cluster' column
+            colorscale='Viridis',
+            showscale=True,
+            colorbar=dict(title='Cluster')
         ),
         hovertemplate='<b>Location:</b> %{text}<br>' +
-                      '<b>Cluster:</b> %{marker.color}<br>',
+                      '<b>Cluster:</b> %{marker.color}',
         text=df['LOCATION']
     )
 
     fig.add_trace(scatter)
 
-    # Add custom legend for clusters
-    legend_items = [
-        go.Scattergeo(
-            lat=[],
-            lon=[],
-            mode='markers',
-            marker=dict(
-                size=10,
-                color=cluster_colors[i],
-                symbol='circle',
-                line=dict(width=1, color='black')
-            ),
-            hoverinfo='skip',
-            showlegend=True,
-            name=cluster_labels[i],
-        )
-        for i in range(len(cluster_colors))
-    ]
-
-    fig.add_traces(legend_items)
-
-    # Define the dropdown menu options for the variable
-    dropdown_options = []
-    for col in dropdown_columns:
-        if col == 'avg_co2':
-            dropdown_options.append(
-                {
-                    'label': col,
-                    'method': 'update',
-                    'args': [
-                        {'marker': {'colorscale': cluster_colors, 'color': df['Cluster']}},
-                        {'marker': {'colorscale': cluster_colors, 'color': df['Cluster']}}
-                    ]
-                }
-            )
-        else:
-            cmin = df[col].min()
-            cmax = df[col].max()
-
-            dropdown_options.append(
-                {
-                    'label': col,
-                    'method': 'update',
-                    'args': [
-                        {'marker': {'colorscale': 'Viridis', 'color': df[col], 'colorbar': {'title': col, 'cmin': cmin, 'cmax': cmax}}},
-                        {'marker': {'colorscale': 'Viridis', 'color': df[col], 'colorbar': {'title': col, 'cmin': cmin, 'cmax': cmax}}}
-                    ]
-                }
-            )
-
-    # Add dropdown menu for the variable
+    # Set plot layout with dark color scheme
     fig.update_layout(
-        updatemenus=[
-            dict(
-                buttons=dropdown_options,
-                direction='down',
-                active=0,
-                x=0.8,
-                xanchor='left',
-                y=1.1,
-                yanchor='top'
-            )
-        ]
-    )
-
-    # Set plot layout with legend
-    fig.update_layout(  # Set the dark color scheme
         geo=dict(
             scope='usa',
             showland=True,
@@ -788,24 +656,10 @@ def fdr_map_by_cluster(df, dropdown_values):
             showcountries=True,
             countrycolor='gray',
             projection_type='albers usa'
-        ),
-        showlegend=True,
-        legend=dict(
-            title='Clusters',
-            itemsizing='constant',
-            bgcolor='rgba(0,0,0,0)',
-            xanchor='right',
-            yanchor='top',
-            x=0.98,
-            y=0.98,
-            bordercolor='black',
-            borderwidth=1
         )
     )
 
     return fig
-
-
 
 with header:
     st.title('Multivariate Clustering with US GHG CO2 Emissions Socioeconomic Vulnerability Variables 2014-2020')
@@ -836,13 +690,9 @@ with kmeans_plots:
     st.subheader('K-Means Clustering k=6')
     st.plotly_chart(kmeans_map_by_value(data, kmeans_vars), use_container_width=True)
 
-    #st.header('Map by Cluster')
-    #st.subheader('K-Means Clustering k=6')
-    #st.plotly_chart(kmeans_map_by_cluster(data, kmeans_vars), use_container_width=True)
-
-with header3:
-    st.header('K-Means Clustering on Functionally Reduced Variables')
-    st.subheader('K-Means clustering on variables reduced to slopes and means by linear regression. This model performed best on these variables with a silhouette score of 0.3142')
+    st.header('Map by Cluster')
+    st.subheader('K-Means Clustering k=6')
+    st.plotly_chart(kmeans_map_by_cluster(data), use_container_width=True)
 
 with fdr_heat_map:
     data_fdr = load_data('kmeans_fdr_centroids.csv')
@@ -854,9 +704,13 @@ with fdr_heat_map:
                         'Slope_unemployment', 'Slope_socioeconomic', 'Slope_household_comp',
                         'Slope_minority_status', 'Slope_housing_type', 'Slope_overall_svi',
                         'Slope_xco2_std']
+    st.header('K-Means Clustering on Functionally Reduced Variables')
+    st.subheader('K-Means clustering on variables reduced to slopes and means by linear regression. This model performed best on these variables with a silhouette score of 0.3142')
+
     st.header('Heatmap of Cluster Centroids')
     st.subheader('K-Means Clustering of functionally reduced variables, k=6')
     st.plotly_chart(kmeans_heatmap(data_fdr, fdr_heatmap_vars), use_container_width=True)
+
 
 with fdr_plots:
     data_fdr = load_data('fdr_sample.csv')
@@ -878,5 +732,4 @@ with fdr_plots:
 
     st.header('Map of Slopes and Means for all Variables by Cluster')
     st.subheader('K-Means Clustering of functionally reduced variables, k=6')
-    st.plotly_chart(fdr_map_by_cluster(data_fdr, fdr_map_vars), use_container_width=True)
-
+    st.plotly_chart(fdr_map_by_cluster(data_fdr), use_container_width=True)
