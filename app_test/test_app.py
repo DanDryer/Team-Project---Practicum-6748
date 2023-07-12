@@ -20,7 +20,7 @@ import plotly.colors
 # Main sections for app
 header = st.container()
 header2 = st.container()
-header3 = st.countainer()
+header3 = st.container()
 background = st.container()
 kmeans_heat_map = st.container()
 kmeans_plots = st.container()
@@ -809,10 +809,10 @@ def fdr_map_by_cluster(df, dropdown_values):
 
 with header:
     st.title('Multivariate Clustering with US GHG CO2 Emissions Socioeconomic Vulnerability Variables 2014-2020')
-    
+
 with header2:
-    st.title('K-Means Clustering on All Variables')
-    st.subtitle('K-Means clustering on all variables and one total percent change over six-year period. This model performed best on these variables with a silhouette score of 0.2398')
+    st.header('K-Means Clustering on All Variables')
+    st.subheader('K-Means clustering on all variables and one total percent change over six-year period. This model performed best on these variables with a silhouette score of 0.2398')
 
 with kmeans_heat_map:
     data = load_data('kmeans_tot_pct_centroids.csv')
@@ -841,9 +841,9 @@ with kmeans_plots:
     #st.plotly_chart(kmeans_map_by_cluster(data, kmeans_vars), use_container_width=True)
 
 with header3:
-    st.title('K-Means Clustering on Functionally Reduced Variables')
-    st.subtitle('K-Means clustering on variables reduced to slopes and means by linear regression. This model performed best on these variables with a silhouette score of 0.3142')
-    
+    st.header('K-Means Clustering on Functionally Reduced Variables')
+    st.subheader('K-Means clustering on variables reduced to slopes and means by linear regression. This model performed best on these variables with a silhouette score of 0.3142')
+
 with fdr_heat_map:
     data_fdr = load_data('kmeans_fdr_centroids.csv')
     fdr_heatmap_vars = ['Mean_avg_co2', 'Mean_total_population', 'Mean_housing_units',
@@ -879,7 +879,4 @@ with fdr_plots:
     st.header('Map of Slopes and Means for all Variables by Cluster')
     st.subheader('K-Means Clustering of functionally reduced variables, k=6')
     st.plotly_chart(fdr_map_by_cluster(data_fdr, fdr_map_vars), use_container_width=True)
-
-
-
 
