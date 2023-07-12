@@ -1,4 +1,0 @@
-405 red
-410 green
-415 blue
-nv 0 0 0 0
