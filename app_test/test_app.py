@@ -9,22 +9,17 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-# Sklearn imports
 
 # Plots
 import plotly.graph_objs as go
 from plotly.subplots import make_subplots
-import matplotlib.cm as cm
+import chart_studio.plotly as pyo
 
 
 # Main sections for app
 header = st.container()
-header2 = st.container()
-header3 = st.container()
 background = st.container()
-kmeans_heat_map = st.container()
 kmeans_plots = st.container()
-fdr_heat_map = st.container()
 fdr_plots = st.container()
 
 
@@ -337,90 +332,6 @@ def kmeans_map_by_value(df, dropdown_values):
     fig.update_layout(sliders=[slider])
 
     return fig
-@st.cache_data
-def kmeans_map_by_cluster(df):
-    """
-    :param df: dataframe resulting from k-means analysis on all vars, all years, and 6yr pct change var, and cluster labels column
-    :return: plotly figure object that:
-                plots all vars vs avg_co2
-                shades points by cluster
-    """
-    # Create the scatter point US map
-    fig = make_subplots(rows=1, cols=1)
-
-    # Add scatter trace to the figure
-    scatter = go.Scattergeo(
-        lat=df['latitude'],
-        lon=df['longitude'],
-        mode='markers',
-        marker=dict(
-            size=15,
-            sizemode='diameter',
-            sizeref=0.1,
-            sizemin=1,
-            color=df['Cluster'],  # Shade points by the 'Cluster' column
-            colorscale='Viridis',
-            showscale=True,
-            colorbar=dict(title='Cluster')
-        ),
-        hovertemplate='<b>Location:</b> %{text}<br>' +
-                      '<b>Cluster:</b> %{marker.color}',
-        text=df['LOCATION']
-    )
-
-    fig.add_trace(scatter)
-
-    # Set plot layout with dark color scheme
-    fig.update_layout(
-        geo=dict(
-            scope='usa',
-            showland=True,
-            landcolor='lightgray',
-            showlakes=True,
-            lakecolor='white',
-            showocean=True,
-            oceancolor='aliceblue',
-            showcountries=True,
-            countrycolor='gray',
-            projection_type='albers usa'
-        )
-    )
-
-    # Add slider bar for year filter
-    slider = dict(
-        active=0,
-        currentvalue={"prefix": "Year: "},
-        pad={"t": 50},
-        steps=[]
-    )
-
-    unique_clusters = sorted(df['Cluster'].unique())
-
-    for year in sorted(df['year'].unique()):
-        step = {
-            "label": str(year),
-            "method": "update",
-            "args": [
-                {
-                    "marker": {
-                        "size": 15,
-                        "sizemode": "diameter",
-                        "sizeref": 0.1,
-                        "sizemin": 1,
-                        "color": [df[(df['year'] == year)]['Cluster'].tolist()[0]],
-                        "colorscale": "Viridis",
-                        "colorbar": {"title": 'Cluster'},
-                    }
-                },
-                {"marker.colorbar.title": 'Cluster'},
-            ]
-        }
-        step['args'][0]['marker']['color'] = df[df['year'] == year]['Cluster'].tolist()
-        slider['steps'].append(step)
-
-    fig.update_layout(sliders=[slider])
-
-    return fig
 
 @st.cache_data
 def fdr_scatter(df, dropdown_values):
@@ -611,92 +522,111 @@ def fdr_map_by_value(df, dropdown_values):
     return fig
 
 @st.cache_data
-def fdr_map_by_cluster(df):
-    """
-    :param df: dataframe resulting from k-means analysis on all vars, all years, and 6yr pct change var, and cluster labels column
-    :return: plotly figure object that:
-                plots all vars vs avg_co2
-                shades points by cluster
-    """
-    # Create the scatter point US map
-    fig = make_subplots(rows=1, cols=1)
+def facet_plot_maps_by_cluster(df):
+    cluster_colors = {
+        0: '#fde725',
+        1: '#7ad151',
+        2: '#22a884',
+        3: '#2a788e',
+        4: '#414487',
+        5: '#440154'
+    }
 
-    # Add scatter trace to the figure
-    scatter = go.Scattergeo(
-        lat=df['latitude'],
-        lon=df['longitude'],
-        mode='markers',
-        marker=dict(
-            size=15,
-            sizemode='diameter',
-            sizeref=0.1,
-            sizemin=1,
-            color=df['Cluster'],  # Shade points by the 'Cluster' column
-            colorscale='Viridis',
-            showscale=True,
-            colorbar=dict(title='Cluster')
-        ),
-        hovertemplate='<b>Location:</b> %{text}<br>' +
-                      '<b>Cluster:</b> %{marker.color}',
-        text=df['LOCATION']
+    # Get unique values in the "Cluster" column
+    clusters = df['Cluster'].unique()
+
+    # Create subplots for each cluster
+    fig = make_subplots(rows=2, cols=3, subplot_titles=[f'Cluster {cluster}' for cluster in clusters], specs=[[{'type': 'scattergeo'}]*3]*2)
+
+    # Set the center coordinates for the map
+    center_lat = df['latitude'].mean()
+    center_lon = df['longitude'].mean()
+
+    # Iterate over clusters and create scatter plots
+    for i, cluster in enumerate(clusters, 1):
+        scatter_geo = go.Scattergeo(
+            lat=df[df['Cluster'] == cluster]['latitude'],
+            lon=df[df['Cluster'] == cluster]['longitude'],
+            mode='markers',
+            marker=dict(
+                size=3,
+                color=cluster_colors[cluster],
+                colorscale='Viridis',
+                showscale=False
+            ),
+            name=f'Cluster {cluster}'
+
+        )
+
+        fig.add_trace(scatter_geo, row=(i-1) // 3 + 1, col=(i-1) % 3 + 1)
+
+    fig.update_geos(
+        projection_type="albers usa",
+        showland=True,
+        landcolor='lightgray',
+        showocean=True,
+        oceancolor='aliceblue',
+        showlakes=True,
+        lakecolor='white',
+        showcountries=True,
+        countrycolor='gray'
     )
 
-    fig.add_trace(scatter)
-
-    # Set plot layout with dark color scheme
     fig.update_layout(
-        geo=dict(
-            scope='usa',
-            showland=True,
-            landcolor='lightgray',
-            showlakes=True,
-            lakecolor='white',
-            showocean=True,
-            oceancolor='aliceblue',
-            showcountries=True,
-            countrycolor='gray',
-            projection_type='albers usa'
+        height=600,
+        width=800,
+        showlegend=True,
+        legend=dict(
+            title='Cluster',
+            itemsizing='constant',
+            bgcolor='rgba(0,0,0,0)',
+            traceorder='normal'
         )
     )
 
     return fig
 
 with header:
-    st.title('Multivariate Clustering with US GHG CO2 Emissions Socioeconomic Vulnerability Variables 2014-2020')
-
-with header2:
-    st.header('K-Means Clustering on All Variables')
-    st.subheader('K-Means clustering on all variables and one total percent change over six-year period. This model performed best on these variables with a silhouette score of 0.2398')
-
-with kmeans_heat_map:
-    data = load_data('kmeans_tot_pct_centroids.csv')
-    kmeans_heatmap_vars = ['avg_co2', 'total_population', 'housing_units', 'num_households', 'unemployment',
-                           'socioeconomic', 'household_comp', 'minority_status', 'housing_type',
-                           'overall_svi', 'xco2_std', 'co2_6yr_pct_change']
-    st.header('Heatmap of Cluster Centroids')
-    st.subheader('K-Means clustering k=6')
-    st.plotly_chart(kmeans_heatmap(data, kmeans_heatmap_vars), use_container_width=True)
+    st.title('Multivariate Cluster Analysis of US Atmospheric CO2 Concentrations and Socioeconomic Vulnerability Variables 2014-2020')
+    st.markdown('GE Vernova (Team 2): Dan Dryer Dryer, Daniel C <ddryer3@gatech.edu>, Joanna Rashid ,<joannarashid@gatech.edu>, Nhu Y Pham <npham48@gatech.edu>')
+    st.markdown('July 12, 2023')
+    st.divider()
 
 with kmeans_plots:
     data = load_data('kmeans_sample.csv')
-    kmeans_vars = ['xco2_std', 'total_population', 'housing_units', 'num_households',
-                   'unemployment', 'socioeconomic', 'household_comp',
-                   'minority_status', 'housing_type', 'overall_svi', 'co2_6yr_pct_change']
-    st.header('All Variables vs CO2 by cluster')
-    st.subheader('K-Means Clustering k=6')
+    data_centroids = load_data('kmeans_tot_pct_centroids.csv')
+    kmeans_vars = ['avg_co2', 'total_population', 'housing_units', 'num_households', 'unemployment',
+                           'socioeconomic', 'household_comp', 'minority_status', 'housing_type',
+                           'overall_svi', 'xco2_std', 'co2_6yr_pct_change']
+
+    st.header('K-Means Clustering on All Variables')
+    st.markdown('K-Means clustering on all variables and one total percent change over six-year period. This model performed best on these variables with a silhouette score of 0.2398.')
+
+    st.subheader('Description of Data (original unscaled values for interpretability)')
+    st.dataframe(data[kmeans_vars].describe())
+
+    st.subheader('Heatmap of Cluster Centroids')
+    st.markdown('K-Means clustering k=6')
+    st.markdown('To illustrate the cluster characteristics, this heatmap illustrates the mean scaled value for each variable within a cluster. ')
+    st.plotly_chart(kmeans_heatmap(data_centroids, kmeans_vars), use_container_width=True)
+
+    st.subheader('All Variables vs CO2 by cluster')
+    st.markdown('K-Means Clustering k=6')
     st.plotly_chart(kmeans_scatter(data, kmeans_vars), use_container_width=True)
 
-    st.header('Map by Value')
-    st.subheader('K-Means Clustering k=6')
+    st.subheader('Map by Value')
+    st.markdown('K-Means Clustering k=6')
     st.plotly_chart(kmeans_map_by_value(data, kmeans_vars), use_container_width=True)
 
-    st.header('Map by Cluster')
-    st.subheader('K-Means Clustering k=6')
-    st.plotly_chart(kmeans_map_by_cluster(data), use_container_width=True)
+    st.subheader('Map by Cluster')
+    st.markdown('K-Means Clustering k=6')
+    st.plotly_chart(facet_plot_maps_by_cluster(data), use_container_width=True)
+    st.divider()
 
-with fdr_heat_map:
-    data_fdr = load_data('kmeans_fdr_centroids.csv')
-    fdr_heatmap_vars = ['Mean_avg_co2', 'Mean_total_population', 'Mean_housing_units',
+with fdr_plots:
+    data_fdr_centroids = load_data('kmeans_fdr_centroids.csv')
+    data_fdr = load_data('fdr_sample.csv')
+    fdr_vars = ['Mean_avg_co2', 'Mean_total_population', 'Mean_housing_units',
                         'Mean_num_households', 'Mean_unemployment', 'Mean_socioeconomic',
                         'Mean_household_comp', 'Mean_minority_status', 'Mean_housing_type',
                         'Mean_overall_svi', 'Mean_xco2_std', 'Slope_avg_co2',
@@ -704,32 +634,27 @@ with fdr_heat_map:
                         'Slope_unemployment', 'Slope_socioeconomic', 'Slope_household_comp',
                         'Slope_minority_status', 'Slope_housing_type', 'Slope_overall_svi',
                         'Slope_xco2_std']
+
     st.header('K-Means Clustering on Functionally Reduced Variables')
-    st.subheader('K-Means clustering on variables reduced to slopes and means by linear regression. This model performed best on these variables with a silhouette score of 0.3142')
+    st.markdown('K-Means clustering on variables reduced to slopes and means by linear regression. This model performed best on these variables with a silhouette score of 0.3142')
 
-    st.header('Heatmap of Cluster Centroids')
-    st.subheader('K-Means Clustering of functionally reduced variables, k=6')
-    st.plotly_chart(kmeans_heatmap(data_fdr, fdr_heatmap_vars), use_container_width=True)
+    st.subheader('Description of Data (slope and mean values)')
+    st.dataframe(data_fdr[fdr_vars].describe())
 
+    st.subheader('Heatmap of Cluster Centroids')
+    st.markdown('K-Means Clustering of functionally reduced variables, k=6')
+    st.markdown('To illustrate the cluster characteristics, this heatmap illustrates the mean scaled value for each variable within a cluster. ')
+    st.plotly_chart(kmeans_heatmap(data_fdr_centroids, fdr_vars), use_container_width=True)
 
-with fdr_plots:
-    data_fdr = load_data('fdr_sample.csv')
-    fdr_map_vars = ['Mean_avg_co2', 'Mean_total_population', 'Mean_housing_units',
-                    'Mean_num_households', 'Mean_unemployment', 'Mean_socioeconomic',
-                    'Mean_household_comp', 'Mean_minority_status', 'Mean_housing_type',
-                    'Mean_overall_svi', 'Mean_xco2_std', 'Slope_avg_co2',
-                    'Slope_total_population', 'Slope_housing_units', 'Slope_num_households',
-                    'Slope_unemployment', 'Slope_socioeconomic', 'Slope_household_comp',
-                    'Slope_minority_status', 'Slope_housing_type', 'Slope_overall_svi',
-                    'Slope_xco2_std']
-    st.header('Slopes and Means for all Variables vs. Slope of CO2  by Cluster')
-    st.subheader('K-Means Clustering of functionally reduced variables, k=6')
-    st.plotly_chart(fdr_scatter(data_fdr, fdr_map_vars), use_container_width=True)
+    st.subheader('Slopes and Means for all Variables vs. Slope of CO2  by Cluster')
+    st.markdown('K-Means Clustering of functionally reduced variables, k=6')
+    st.plotly_chart(fdr_scatter(data_fdr, fdr_vars), use_container_width=True)
 
-    st.header('Map of Slopes and Means for all Variables by Value')
-    st.subheader('K-Means Clustering of functionally reduced variables, k=6')
-    st.plotly_chart(fdr_map_by_value(data_fdr, fdr_map_vars), use_container_width=True)
+    st.subheader('Map of Slopes and Means for all Variables by Value')
+    st.markdown('K-Means Clustering of functionally reduced variables, k=6')
+    st.plotly_chart(fdr_map_by_value(data_fdr, fdr_vars), use_container_width=True)
 
-    st.header('Map of Slopes and Means for all Variables by Cluster')
-    st.subheader('K-Means Clustering of functionally reduced variables, k=6')
-    st.plotly_chart(fdr_map_by_cluster(data_fdr), use_container_width=True)
+    st.subheader('Map of Slopes and Means for all Variables by Cluster')
+    st.markdown('K-Means Clustering of functionally reduced variables, k=6')
+    st.plotly_chart(facet_plot_maps_by_cluster(data_fdr), use_container_width=True)
+    st.divider()
