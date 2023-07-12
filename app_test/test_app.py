@@ -1,7 +1,7 @@
 #### To run the app: ####
 
 # pip install streamlit
-# to run file locally, cd into folder where file and data are located and execute 'streamlit run app_dbscan.py' in command line
+# to run file locally, cd into folder where file and data are located and execute 'streamlit run test_app.py' in command line
 # make sure data file is in the same folder as this file
 
 #########################
