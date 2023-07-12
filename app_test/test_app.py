@@ -19,6 +19,8 @@ import plotly.colors
 
 # Main sections for app
 header = st.container()
+header2 = st.container()
+header3 = st.countainer()
 background = st.container()
 kmeans_heat_map = st.container()
 kmeans_plots = st.container()
@@ -807,6 +809,10 @@ def fdr_map_by_cluster(df, dropdown_values):
 
 with header:
     st.title('Multivariate Clustering with US GHG CO2 Emissions Socioeconomic Vulnerability Variables 2014-2020')
+    
+with header2:
+    st.title('K-Means Clustering on All Variables')
+    st.subtitle('K-Means clustering on all variables and one total percent change over six-year period. This model performed best on these variables with a silhouette score of 0.2398')
 
 with kmeans_heat_map:
     data = load_data('kmeans_tot_pct_centroids.csv')
@@ -814,7 +820,7 @@ with kmeans_heat_map:
                            'socioeconomic', 'household_comp', 'minority_status', 'housing_type',
                            'overall_svi', 'xco2_std', 'co2_6yr_pct_change']
     st.header('Heatmap of Cluster Centroids')
-    st.subheader('K-Means Clustering k=6')
+    st.subheader('K-Means clustering k=6')
     st.plotly_chart(kmeans_heatmap(data, kmeans_heatmap_vars), use_container_width=True)
 
 with kmeans_plots:
@@ -834,6 +840,10 @@ with kmeans_plots:
     #st.subheader('K-Means Clustering k=6')
     #st.plotly_chart(kmeans_map_by_cluster(data, kmeans_vars), use_container_width=True)
 
+with header3:
+    st.title('K-Means Clustering on Functionally Reduced Variables')
+    st.subtitle('K-Means clustering on variables reduced to slopes and means by linear regression. This model performed best on these variables with a silhouette score of 0.3142')
+    
 with fdr_heat_map:
     data_fdr = load_data('kmeans_fdr_centroids.csv')
     fdr_heatmap_vars = ['Mean_avg_co2', 'Mean_total_population', 'Mean_housing_units',
