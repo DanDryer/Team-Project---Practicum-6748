@@ -621,7 +621,7 @@ with kmeans_plots:
 
 with fdr_plots:
     data_fdr_centroids = load_data('https://storage.googleapis.com/oco2-sedac-2014-2018/kmeans_fdr_heatmap_app.csv')
-    data_fdr = load_data('https://storage.googleapis.com/oco2-sedac-2014-2018/kmeans_sample.csv')
+    data_fdr = load_data('https://storage.googleapis.com/oco2-sedac-2014-2018/kmeans_fdr_sample.csv')
     fdr_vars = ['Mean_avg_co2', 'Mean_total_population', 'Mean_housing_units',
                         'Mean_num_households', 'Mean_unemployment', 'Mean_socioeconomic',
                         'Mean_household_comp', 'Mean_minority_status', 'Mean_housing_type',
