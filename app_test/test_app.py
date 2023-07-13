@@ -588,7 +588,7 @@ with header:
     st.divider()
 
 with kmeans_plots:
-    data = load_data('https://storage.googleapis.com/oco2-sedac-2014-2018/kmeans_clustering_tot_pct_unscaled_w_year.csv')
+    data = load_data('https://storage.googleapis.com/oco2-sedac-2014-2018/kmeans_sample.csv')
     data_centroids = load_data('https://storage.googleapis.com/oco2-sedac-2014-2018/kmeans_tot_pct_heatmap.csv')
     kmeans_vars = ['avg_co2', 'total_population', 'housing_units', 'num_households', 'unemployment',
                            'socioeconomic', 'household_comp', 'minority_status', 'housing_type',
@@ -621,7 +621,7 @@ with kmeans_plots:
 
 with fdr_plots:
     data_fdr_centroids = load_data('https://storage.googleapis.com/oco2-sedac-2014-2018/kmeans_fdr_heatmap_app.csv')
-    data_fdr = load_data('https://storage.googleapis.com/oco2-sedac-2014-2018/kmeans_fdr_w_labels.csv')
+    data_fdr = load_data('https://storage.googleapis.com/oco2-sedac-2014-2018/kmeans_sample.csv')
     fdr_vars = ['Mean_avg_co2', 'Mean_total_population', 'Mean_housing_units',
                         'Mean_num_households', 'Mean_unemployment', 'Mean_socioeconomic',
                         'Mean_household_comp', 'Mean_minority_status', 'Mean_housing_type',
@@ -647,9 +647,9 @@ with fdr_plots:
     st.markdown('K-Means Clustering of functionally reduced variables, k=6')
     st.plotly_chart(fdr_scatter(data_fdr, fdr_vars), use_container_width=True)
 
-    st.subheader('Map of Slopes and Means for all Variables by Value')
-    st.markdown('K-Means Clustering of functionally reduced variables, k=6')
-    st.plotly_chart(fdr_map_by_value(data_fdr, fdr_vars), use_container_width=True)
+    #st.subheader('Map of Slopes and Means for all Variables by Value')
+    #st.markdown('K-Means Clustering of functionally reduced variables, k=6')
+    #st.plotly_chart(fdr_map_by_value(data_fdr, fdr_vars), use_container_width=True)
 
     st.subheader('Map of Slopes and Means for all Variables by Cluster')
     st.markdown('K-Means Clustering of functionally reduced variables, k=6')
