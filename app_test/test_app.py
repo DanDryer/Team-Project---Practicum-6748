@@ -106,14 +106,13 @@ def kmeans_scatter(df,dropdown_values):
             x=cluster_data['avg_co2'],
             y=cluster_data[y_column],
             mode='markers',
+            name='Cluster ' + str(cluster),
             marker=dict(
                 size=10,
                 color=cluster_colors[cluster],  # Assign a different color for each cluster
                 symbol='circle',
                 line=dict(width=1, color='black')
-            ),
-            text=cluster_data['LOCATION'],
-            name=f'Cluster {cluster}'
+            )
         )
         traces.append(trace)
 
@@ -141,9 +140,9 @@ def kmeans_scatter(df,dropdown_values):
                 buttons=dropdown_options_y,
                 direction='down',
                 active=0,
-                x=0.8,
+                x=0.5,
                 xanchor='left',
-                y=1.1,
+                y=1.15,
                 yanchor='top'
             )
         ]
@@ -176,7 +175,7 @@ def kmeans_scatter(df,dropdown_values):
 
     # Set plot layout with color scheme and legend
     fig.update_layout(
-        xaxis=dict(title='avg_co2'),
+        xaxis=dict(title='Average Annual CO2'),
         yaxis=dict(title=y_column),
         autosize=True,
         showlegend=True,  # Show the legend
@@ -222,10 +221,7 @@ def kmeans_map_by_value(df, dropdown_values):
             colorscale='Viridis',
             showscale=True,
             colorbar=dict(title=variable)
-        ),
-        hovertemplate='<b>Location:</b> %{text}<br>' +
-                      f'<b>{variable}:</b> %{{marker.color}}',
-        text=df['LOCATION']
+        )
     )
 
     fig.add_trace(scatter)
@@ -368,15 +364,14 @@ def fdr_scatter(df, dropdown_values):
         trace = go.Scatter(
             x=cluster_data['Mean_avg_co2'],
             y=cluster_data[y_column],
+            name='Cluster ' + str(cluster),
             mode='markers',
             marker=dict(
                 size=10,
                 color=cluster_colors[cluster],  # Assign a different color for each cluster
                 symbol='circle',
                 line=dict(width=1, color='black')
-            ),
-            text=cluster_data['LOCATION'],
-            name=f'Cluster {cluster}'
+            )
         )
         traces.append(trace)
 
@@ -405,9 +400,9 @@ def fdr_scatter(df, dropdown_values):
                 direction='down',
 
                 active=0,
-                x=0.8,
+                x=0.5,
                 xanchor='left',
-                y=1.1,
+                y=1.15,
                 yanchor='top'
             )
         ]
@@ -415,7 +410,7 @@ def fdr_scatter(df, dropdown_values):
 
     # Set plot layout with color scheme and legend
     fig.update_layout(
-        xaxis=dict(title='avg_co2'),
+        xaxis=dict(title='Annual Rate of Change in CO2 (Slope)'),
         yaxis=dict(title=y_column),
         autosize=True,
         showlegend=True,  # Show the legend
@@ -593,16 +588,17 @@ with header:
     st.divider()
 
 with kmeans_plots:
-    data = load_data('kmeans_sample.csv')
-    data_centroids = load_data('kmeans_tot_pct_centroids.csv')
+    data = load_data('https://storage.googleapis.com/oco2-sedac-2014-2018/kmeans_clustering_tot_pct_unscaled_w_year.csv')
+    data_centroids = load_data('https://storage.googleapis.com/oco2-sedac-2014-2018/kmeans_tot_pct_heatmap.csv')
     kmeans_vars = ['avg_co2', 'total_population', 'housing_units', 'num_households', 'unemployment',
                            'socioeconomic', 'household_comp', 'minority_status', 'housing_type',
                            'overall_svi', 'xco2_std', 'co2_6yr_pct_change']
 
     st.header('K-Means Clustering on All Variables')
-    st.markdown('K-Means clustering on all variables and one total percent change over six-year period. This model performed best on these variables with a silhouette score of 0.2398.')
+    st.markdown('K-Means clustering on all variables and one total percent change over six-year period. This model performed best on these variables with a silhouette score of 0.229361 and a Davies Bouldin score of 1.837522.')
 
-    st.subheader('Description of Data (original unscaled values for interpretability)')
+    st.subheader('Description of Data')
+    st.markdown('This table shows the descriptive statistics for the unscaled data which was used to conduct these data visualization. The cluster analysis was conducted on a scaled version af this data.')
     st.dataframe(data[kmeans_vars].describe())
 
     st.subheader('Heatmap of Cluster Centroids')
@@ -624,8 +620,8 @@ with kmeans_plots:
     st.divider()
 
 with fdr_plots:
-    data_fdr_centroids = load_data('kmeans_fdr_centroids.csv')
-    data_fdr = load_data('fdr_sample.csv')
+    data_fdr_centroids = load_data('https://storage.googleapis.com/oco2-sedac-2014-2018/kmeans_fdr_heatmap_app.csv')
+    data_fdr = load_data('https://storage.googleapis.com/oco2-sedac-2014-2018/kmeans_fdr_w_labels.csv')
     fdr_vars = ['Mean_avg_co2', 'Mean_total_population', 'Mean_housing_units',
                         'Mean_num_households', 'Mean_unemployment', 'Mean_socioeconomic',
                         'Mean_household_comp', 'Mean_minority_status', 'Mean_housing_type',
@@ -636,14 +632,15 @@ with fdr_plots:
                         'Slope_xco2_std']
 
     st.header('K-Means Clustering on Functionally Reduced Variables')
-    st.markdown('K-Means clustering on variables reduced to slopes and means by linear regression. This model performed best on these variables with a silhouette score of 0.3142')
+    st.markdown('K-Means clustering on variables reduced to slopes and means by linear regression. ')
 
-    st.subheader('Description of Data (slope and mean values)')
+    st.subheader('Description of Data')
+    st.markdown('This table shows the descriptive statistics for the slope and mean values. The cluster analysis was conducted on a scaled version af this data.')
     st.dataframe(data_fdr[fdr_vars].describe())
 
     st.subheader('Heatmap of Cluster Centroids')
     st.markdown('K-Means Clustering of functionally reduced variables, k=6')
-    st.markdown('To illustrate the cluster characteristics, this heatmap illustrates the mean scaled value for each variable within a cluster. ')
+    st.markdown('To illustrate the cluster characteristics, this heatmap illustrates the mean scaled value for each variable within a cluster. This model performed best on these variables with a silhouette score of 0.302644 and a Davies Bouldin score of 1.514562.')
     st.plotly_chart(kmeans_heatmap(data_fdr_centroids, fdr_vars), use_container_width=True)
 
     st.subheader('Slopes and Means for all Variables vs. Slope of CO2  by Cluster')
