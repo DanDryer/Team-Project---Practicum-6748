@@ -52,7 +52,7 @@ def about():
             htmlFile2 = open("app_lyte/images/countyco2_vs_year.html",
                              'r', encoding='utf-8')
             fig2 = htmlFile2.read()
-            st.components.v1.html(fig2, height=600, width=1000)
+            st.components.v1.html(fig2, height=600)
         else:
             with left:
                 option = st.selectbox(
